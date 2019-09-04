@@ -42,6 +42,9 @@ Use Plotly.js to build interactive charts for your dashboard.
 * DashBoard looks like
 
 ![Example Dashboard Page](Images/Biodiversity.png)
+## Step 2 - Heroku
 
+Deploy your Flask app to Heroku.
+Find the app: https://biodiversity-study.herokuapp.com/
 
 
