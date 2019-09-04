@@ -17,7 +17,7 @@ app = Flask(__name__)
 #################################################
 # Database Setup
 #################################################
-
+app.config["SQLALCHEMY_TRACK_MODIFICATION"] = False
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db/bellybutton.sqlite"
 db = SQLAlchemy(app)
 
@@ -88,17 +88,35 @@ def samples(sample):
     # Filter the data based on the sample number and
     # only keep rows with values above 1
     sample_data = df.loc[df[sample] > 1, ["otu_id", "otu_label", sample]]
+    sample_data = sample_data.sort_values(by=[sample] ,ascending=False)
     # Format the data to send as json
     data = {
         "otu_ids": sample_data.otu_id.values.tolist(),
         "sample_values": sample_data[sample].values.tolist(),
         "otu_labels": sample_data.otu_label.tolist(),
     }
+
     return jsonify(data)
 
 
+@app.route("/wfreq/<sample>")
+def wfreq(sample):
+    selection = [
+    Samples_Metadata.sample,
+    Samples_Metadata.WFREQ,
+    ]
+
+    wfreq_results = db.session.query(*selection).filter(Samples_Metadata.sample == sample).all()
+
+    sample_wfreq = {}
+
+    for result in wfreq_results:
+        sample_wfreq["sample"] = result[0]
+        sample_wfreq["WFREQ"] = result[1]
+
+    return jsonify(sample_wfreq)
+
+
+
 if __name__ == "__main__":
-    #Bind to PORT if defined, otherwise default to 5000.
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
-    #app.run()
+    app.run()

@@ -1,88 +1,161 @@
 function buildMetadata(sample) {
+  var metadataSelector = d3.select('#sample-metadata');
 
-// @TODO: Complete the following function that builds the metadata panel
-
-// Use `d3.json` to fetch the metadata for a sample
-
-// Use d3 to select the panel with id of `#sample-metadata`
-var metadataURL = `/metadata/${sample}`;
-    
-d3.json(metadataURL).then(function(sample){
-  var sampleData = d3.select(`#sample-metadata`);
-
-// Use `.html("") to clear any existing metadata
-sampleData.html("");
-// Use `Object.entries` to add each key and value pair to the panel
-// Hint: Inside the loop, you will need to use d3 to append new
-// tags for each key-value in the metadata.
-Object.entries(sample).forEach(function([key,value]){
-  var row = sampleData.append("p");
-  row.text(`${key}:${value}`)
-  });
- });
+  d3.json(`/metadata/${sample}`).then( data =>{
+    metadataSelector.html("");
+    console.log(Object.entries(data));
+    Object.entries(data).forEach(([key,value]) =>{
+      metadataSelector
+        .append('p').text(`${key} : ${value}`)
+        .append('hr')
+    });
+    })
 }
 
-    // BONUS: Build the Gauge Chart
-    // buildGauge(data.WFREQ);
+function pieChart(data) {
+  console.log(data);
+  let labels = data.otu_ids.slice(0,10);
+  let values = data.sample_values.slice(0,10);
+  let hovertext = data.otu_labels.slice(0,10);
 
-
-    function buildCharts(sample) {
-      // @TODO: Use `d3.json` to fetch the sample data for the plots
-      var plotData = `/samples/${sample}`;
-      // @TODO: Build a Bubble Chart using the sample data
-      d3.json(plotData).then(function(data){
-        console.log(plotData);
-        var x_axis = data.otu_ids;
-        var y_axis = data.sample_values;
-        var size = data.sample_values;
-        var color = data.otu_ids;
-        var texts = data.otu_labels;
-      
-        var bubble = {
-          x: x_axis,
-          y: y_axis,
-          text: texts,
-          mode: `markers`,
-          marker: {
-            size: size,
-            color: color,
-            colorscale: 'Earth'
-          }
-        };
-    
-        var data = [bubble];
-        var layout = {
-          title: "Belly Button Bacteria",
-          xaxis: {title: "OTU ID"}
-        };
-        Plotly.newPlot("bubble", data, layout);
-// @TODO: Build a Pie Chart
-        // @TODO: Build a Pie Chart
-// HINT: You will need to use slice() to grab the top 10 sample_values,
-// otu_ids, and labels (10 each).
-d3.json(plotData).then(function(data){
-  const values = data.sample_values.slice(0,10);
-  const labels = data.otu_ids.slice(0,10);
-  const display = data.otu_labels.slice(0,10);
- 
-  var pie_chart = [{
-    values: values,
-    labels: labels,
-    hovertext: display,
-    hoverinfo: 'hovertext',
-    type: "pie"
+  let trace = [{
+    values : values,
+    labels : labels,
+    type : "pie",
+    textposition: "inside",
+    hovertext : hovertext
   }];
-  //var pieLayout = {
-   // margin: {t: 0, l: 0}
-  //}
-  Plotly.newPlot('pie',pie_chart);
-});
 
+  let layout = {
+      title: '<b> Belly Button Pie Chart </b>',
+      plot_bgcolor: 'rgba(0, 0, 0, 0)',
+      paper_bgcolor: 'rgba(0, 0, 0, 0)',
+  };
 
-});
+  Plotly.newPlot('pie', trace , layout, {responsive: true});
+}
+
+function bubbleChart(data) {
+let x = data.otu_ids;
+let y = data.sample_values;
+let markersize = data.sample_values;
+let markercolors = data.otu_ids;
+let textvalues = data.otu_labels;
+
+let trace =[{
+  x: x,
+  y: y,
+  mode: 'markers',
+  marker: {
+    size: markersize,
+    color: markercolors,
+    colorscale: 'Earth'
+  },
+  text: textvalues
+}];
+
+let layout ={
+  title:"<b> Belly Button Bubble Chart </b>",
+  xaxis: {
+    title: 'OTU ID',
+  },
+  yaxis: {
+    title: 'Sample Value'
+  },
+  width:1100,
+  plot_bgcolor: 'rgba(0, 0, 0, 0)',
+  paper_bgcolor: 'rgba(0, 0, 0, 0)',
 };
 
+Plotly.newPlot('bubble', trace, layout, {responsive: true});
+}
 
+function gaugeChart(data) {
+// Enter a speed between 0 and 180
+let degree = parseInt(data.WFREQ) * (180/10);
+
+let level = degree;
+
+// Trig to calc meter point
+let degrees = 180 - level,
+     radius = .5;
+let radians = degrees * Math.PI / 180;
+let x = radius * Math.cos(radians);
+let y = radius * Math.sin(radians);
+
+// Path: may have to change to create a better triangle
+let mainPath = 'M -.0 -0.025 L .0 0.025 L ',
+     pathX = String(x),
+     space = ' ',
+     pathY = String(y),
+     pathEnd = ' Z';
+let path = mainPath.concat(pathX,space,pathY,pathEnd);
+
+let trace = [{ type: 'scatter',
+   x: [0], y:[0],
+    marker: {size: 28, color:'850000'},
+    showlegend: false,
+    name: 'WASH FREQ',
+    text: data.WFREQ,
+    hoverinfo: 'text+name'},
+    {values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 9],
+    rotation: 90,
+    text: ['8-9', '7-8', '6-7', '5-6', '4-5', '3-4', '2-3', '1-2', '0-1',''],
+    textinfo: 'text',
+    textposition:'inside',
+    textfont:{
+    size : 16,
+    },
+    marker: {colors:['rgba(6, 51, 0, .5)', 'rgba(9, 77, 0, .5)', 
+                         'rgba(12, 102, 0 ,.5)', 'rgba(14, 127, 0, .5)',
+                         'rgba(110, 154, 22, .5)','rgba(170, 202, 42, .5)', 
+                         'rgba(202, 209, 95, .5)','rgba(210, 206, 145, .5)', 
+                         'rgba(232, 226, 202, .5)','rgba(255, 255, 255, 0)'
+                  ]},
+  labels: ['8-9', '7-8', '6-7', '5-6', '4-5', '3-4', '2-3', '2-1', '0-1',''],
+  hoverinfo: 'text',
+  hole: .5,
+  type: 'pie',
+  showlegend: false
+}];
+
+let layout = {
+  shapes:[{
+      type: 'path',
+      path: path,
+      fillcolor: '850000',
+      line: {
+        color: '850000'
+      }
+    }],
+
+  title: '<b> Belly Button Washing Frequency</b> <br> Scrub Per Week',
+  xaxis: {zeroline:false, showticklabels:false,
+             showgrid: false, range: [-1, 1]},
+  yaxis: {zeroline:false, showticklabels:false,
+             showgrid: false, range: [-1, 1]},
+  plot_bgcolor: 'rgba(0, 0, 0, 0)',
+  paper_bgcolor: 'rgba(0, 0, 0, 0)',
+};
+
+Plotly.newPlot('gauge',trace, layout,{responsive:true});
+}
+
+
+function buildCharts(sample){
+
+  d3.json(`/wfreq/${sample}`).then(wdata =>
+    // ## Gauge Chart ##
+     gaugeChart(wdata)
+  );
+
+  d3.json(`/samples/${sample}`).then(data =>{
+    // ## Pie Chart ##
+    pieChart(data);
+    // ## Bubble Chart ##
+    bubbleChart(data);
+  }); 
+}
 
 function init() {
   // Grab a reference to the dropdown select element
